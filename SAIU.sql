@@ -1,14 +1,6 @@
-CREATE TABLE `Country`(
-    `id_country` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `countryValue` VARCHAR (50) NOT NULL 
-);
-
 CREATE TABLE `Region`(
     `id_region` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `id_country` BIGINT NULL,
-    `regionValue` VARCHAR(100) NOT NULL,
-
-    FOREIGN KEY (`id_country`) REFERENCES `Country`(`id_country`) ON DELETE RESTRICT ON UPDATE CASCADE
+    `regionValue` VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE `City`(
@@ -35,14 +27,20 @@ CREATE TABLE `VehicleCategory`(
 
 CREATE TABLE `DriverLicense`(
     `id_driverLicense` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `id_vehicleCategory` BIGINT NOT NULL,
     `licenseIssueDate` DATE NULL,
     `licenseExpiryDate` DATE NOT NULL,
     `licenseAuthority` VARCHAR(20) NOT NULL,
     `licenseNumber` VARCHAR(30) NOT NULL,
-    `licenseBloodType` VARCHAR(40) NOT NULL,
+    `licenseBloodType` VARCHAR(40) NOT NULL
+);
 
-    FOREIGN KEY (`id_vehicleCategory`) REFERENCES `VehicleCategory`(`id_vehicleCategory`) ON DELETE RESTRICT ON UPDATE CASCADE
+CREATE TABLE `VehicleCategory_DriverLicense`(
+    `id_driverLicense` BIGINT NOT NULL,
+    `id_vehicleCategory` BIGINT NOT NULL,
+
+    FOREIGN KEY (`id_driverLicense`) REFERENCES `DriverLicense`(`id_driverLicense`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (`id_vehicleCategory`) REFERENCES `VehicleCategory`(`id_vehicleCategory`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    PRIMARY KEY (`id_driverLicense`, `id_vehicleCategory`)
 );
 
 CREATE TABLE `PassportType`(
@@ -101,11 +99,18 @@ CREATE TABLE `ScheduleOpen`(
 CREATE TABLE `Office`(
     `id_office` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `id_address` BIGINT NOT NULL,
-    `id_scheduleOpen` BIGINT NOT NULL, 
     `nameValue` VARCHAR(40),
 
-    FOREIGN KEY (`id_address`) REFERENCES `Address`(`id_address`) ON DELETE RESTRICT ON UPDATE CASCADE,
-    FOREIGN KEY (`id_scheduleOpen`) REFERENCES `ScheduleOpen`(`id_scheduleOpen`) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (`id_address`) REFERENCES `Address`(`id_address`) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE `ScheduleOpen_Office`(
+    `id_scheduleOpen` BIGINT NOT NULL,
+    `id_office` BIGINT NOT NULL,
+   
+    FOREIGN KEY (`id_scheduleOpen`) REFERENCES `ScheduleOpen`(`id_scheduleOpen`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (`id_office`) REFERENCES `Office`(`id_office`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    PRIMARY KEY (`id_scheduleOpen`, `id_office`)
 );
 
 CREATE TABLE `Position` (
@@ -113,37 +118,77 @@ CREATE TABLE `Position` (
     `positionValue` VARCHAR(50) NOT NULL
 );
 
+CREATE TABLE `Rank`(
+    `id_rank` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `rankValue` VARCHAR(50) NOT NULL
+);
+
 CREATE TABLE `Employee`(
     `id_employee` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `id_person` BIGINT NOT NULL,
     `id_office` BIGINT NOT NULL,
-    `id_position` BIGINT NOT NOT,
+    `id_position` BIGINT NOT NULL,
+    `id_rank` BIGINT NOT NULL,
     `startWorkingDate` DATE,
 
     FOREIGN KEY (`id_person`) REFERENCES `Person`(`id_person`) ON DELETE RESTRICT ON UPDATE CASCADE,
     FOREIGN KEY (`id_office`) REFERENCES `Office`(`id_office`) ON DELETE RESTRICT ON UPDATE CASCADE,
-    FOREIGN KEY (`id_position`) REFERENCES `Position`(`id_position`) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (`id_position`) REFERENCES `Position`(`id_position`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (`id_rank`) REFERENCES `Rank`(`id_rank`) ON DELETE RESTRICT ON UPDATE CASCADE
+
+);
+
+CREATE TABLE `RoadAccident`(
+    `id_roadAccident` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `accidentDate` DATE NOT NULL,
+    `locationCode` VARCHAR(50) NULL, /* example: 8GXC6CG6+7VP */
+    `note` VARCHAR(100) NULL
 );
 
 CREATE TABLE `CarHolder`(
     `id_carHolder` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `id_person` BIGINT NOT NULL,
-    `carHolderNote` VARCHAR(100)
+    `ownershipType` VARCHAR(50) NOT NULL,
+    `carHolderNote` VARCHAR(100) NULL,
+
+    FOREIGN KEY (`id_person`) REFERENCES `Person`(`id_person`) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE `RoadAccident_CarHolder`(
+    `id_roadAccident` BIGINT NOT NULL,
+    `id_carHolder` BIGINT NOT NULL,
+
+    FOREIGN KEY (`id_roadAccident`) REFERENCES `RoadAccident`(`id_roadAccident`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (`id_carHolder`) REFERENCES `CarHolder`(`id_carHolder`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    PRIMARY KEY (`id_roadAccident`, `id_carHolder`)
 );
 
 CREATE TABLE `CarBrand`(
     `id_carBrand` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `brandValue` VARCHAR(40) 
+    `brandValue` VARCHAR(40) NOT NULL
 );
 
 CREATE TABLE `CarModel`(
     `id_carModel` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `modelValue` VARCHAR(40)
+    `modelValue` VARCHAR(40) NOT NULL
 );
 
 CREATE TABLE `Color`(
     `id_color` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `colorValue` VARCHAR(40)
+    `colorValue` VARCHAR(40) NOT NULL
+);
+
+CREATE TABLE `ProductionYear`(
+    `id_productionYear` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `yearValue` YEAR NOT NULL
+);
+
+CREATE TABLE `EngineInfo`(
+    `id_engineInfo` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `engineNumber` VARCHAR(25) NOT NULL,
+    `engineMileage` INT NOT NULL,
+    `engineCapacity` DECIMAL(3, 1) NULL,
+    `enginePower` INT NOT NULL
 );
 
 CREATE TABLE `Vehicle`(
@@ -152,6 +197,8 @@ CREATE TABLE `Vehicle`(
     `id_carBrand` BIGINT NOT NULL,
     `id_carModel` BIGINT NOT NULL,
     `id_color` BIGINT NOT NULL,
+    `id_productionYear` BIGINT NOT NULL,
+    `id_engineInfo` BIGINT NOT NULL,
     `VIN_number` VARCHAR(30) UNIQUE NOT NULL,
     `registrationDate`  DATE NOT NULL, /*Поставлено на облік*/
     `deregistrationDate` DATE NULL, /*Знято із обліку*/
@@ -159,7 +206,9 @@ CREATE TABLE `Vehicle`(
     FOREIGN KEY (`id_carHolder`) REFERENCES `CarHolder`(`id_carHolder`) ON DELETE RESTRICT ON UPDATE CASCADE,
     FOREIGN KEY (`id_carBrand`) REFERENCES `CarBrand`(`id_carBrand`) ON DELETE RESTRICT ON UPDATE CASCADE,
     FOREIGN KEY (`id_carModel`) REFERENCES `CarModel`(`id_carModel`) ON DELETE RESTRICT ON UPDATE CASCADE,
-    FOREIGN KEY (`id_color`) REFERENCES `Color`(`id_color`) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (`id_color`) REFERENCES `Color`(`id_color`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (`id_productionYear`) REFERENCES `ProductionYear`(`id_productionYear`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (`id_engineInfo`) REFERENCES `EngineInfo`(`id_engineInfo`) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 CREATE TABLE `PlateSeriesCode`( /* KC */
